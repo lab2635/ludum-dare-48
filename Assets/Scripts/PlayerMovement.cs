@@ -31,7 +31,6 @@ public class PlayerMovement : MonoBehaviour
 
     public ParticleSystem boostBubbles;
     public float boostPower = 1f;
-    public float boostBrakePower = 5f;
     public float boostCooldown = 1f;
     public float boostDuration = 0.5f;
     public float boostBrakeDuration = 0.2f;
@@ -56,12 +55,15 @@ public class PlayerMovement : MonoBehaviour
     
     private bool pulseFired;
     private bool boosting;
+    private bool boostBraking;
     
     private float currentSpeed;
     private float speedMultiplier;
 
     void Start()
     {
+        GameManager.OnReset += OnGameReset;
+        
         input = GetComponent<PlayerInput>();
         body = GetComponent<Rigidbody>();
         body.centerOfMass = Vector3.zero;
@@ -70,6 +72,31 @@ public class PlayerMovement : MonoBehaviour
         sonarPulseTimer = 0f;
         pulseFired = false;
         speedMultiplier = 1f;
+    }
+
+    void OnDestroy()
+    {
+        GameManager.OnReset -= OnGameReset;
+    }
+
+    private void OnGameReset()
+    {
+        Reset();
+    }
+    
+    public void Reset()
+    {
+        facingDirection = Quaternion.identity;
+        body.velocity = Vector3.zero;
+        body.drag = 0.2f;
+        acceleration = Vector3.zero;
+        boosting = false;
+        boostBrake = false;
+        pulseFired = false;
+        blastTimer = 0f;
+        boostTimer = 0f;
+        secondPulseTime = 0f;
+        sonarPulseTimer = 0f;
     }
 
     public int GetDepth()
@@ -112,14 +139,12 @@ public class PlayerMovement : MonoBehaviour
 
         if (input.moveLeft)
         {
-            body.AddForce(Vector3.zero, ForceMode.VelocityChange);
             acceleration += Vector3.left * (horizontalSpeed * horizontalSpeedMultiplier);
             facingDirection = Quaternion.Euler(0, 90, 0);
         }
 
         if (input.moveRight)
         {
-            body.AddForce(Vector3.zero, ForceMode.VelocityChange);
             acceleration += Vector3.right * (horizontalSpeed * horizontalSpeedMultiplier);
             facingDirection = Quaternion.Euler(0, -90, 0);
         }
@@ -167,7 +192,17 @@ public class PlayerMovement : MonoBehaviour
 
         if (!boosting && boostTimer >= currentBoostCooldown && input.boost)
         {
-            StartCoroutine(Boost());
+            boostAudio.Play();
+            boostBubbles.Play();
+            boosting = true;
+            boostTimer = 0f;
+        }
+        
+        if (boosting && boostTimer >= boostDuration + boostBrakeDuration)
+        {
+            boostBrake = true;
+            boosting = false;
+            boostTimer = 0f;
         }
 
         boostTimer += Time.deltaTime;
@@ -229,6 +264,8 @@ public class PlayerMovement : MonoBehaviour
         body.velocity -= body.velocity * 0.6f;
     }
 
+    private bool boostBrake;
+
     void FixedUpdate()
     {
         currentSpeed = body.velocity.magnitude;
@@ -242,10 +279,17 @@ public class PlayerMovement : MonoBehaviour
             this.engineAudio.Pause();
         }
 
-        if (boosting)
+        if (boosting && boostTimer < boostDuration)
         {
             acceleration += acceleration.normalized * boostPower;
         }
+
+        if (boostBrake)
+        {
+            body.velocity -= body.velocity * 0.6f; // * Time.fixedDeltaTime;
+            boostBrake = false;
+        }
+        
         acceleration *= speedMultiplier;
 
         var targetSubRotation = Quaternion.LookRotation(transform.forward, Vector3.up);

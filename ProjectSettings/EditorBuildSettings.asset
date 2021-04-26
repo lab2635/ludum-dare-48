@@ -6,9 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/Rein.unity
-    guid: e9fbbeeed8cc58745abe7b5a572d66ed
-  - enabled: 0
-    path: Assets/Scenes/ZyrScene.unity
-    guid: 38e136cdfa19f164da63970efb711a60
+    path: Assets/Scenes/Main.unity
+    guid: 12b15b9602bc2d24aaffe8342ba24b57
   m_configObjects: {}

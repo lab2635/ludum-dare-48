@@ -26,6 +26,8 @@ public class ObstacleCollider : MonoBehaviour
     {
         this.isPlaying = false;
         this.elapsedTime = 0;
+
+        GameManager.OnReset += this.PauseAudio;
     }
 
     private void Update()
@@ -116,6 +118,9 @@ public class ObstacleCollider : MonoBehaviour
 
     private void PauseAudio()
     {
-        this.seaweedCoralAudio.Pause();
+        if (this.seaweedCoralAudio)
+        {
+            this.seaweedCoralAudio.Pause();
+        }
     }
 }
